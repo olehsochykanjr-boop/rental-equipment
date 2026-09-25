@@ -1,0 +1,25 @@
+{
+  "name": "rental-equipment",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sochykanolehclg/rental-equipment.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/sochykanolehclg/rental-equipment/issues"
+  },
+  "homepage": "https://github.com/sochykanolehclg/rental-equipment#readme"
+}
