@@ -5,7 +5,9 @@ const cors = require('cors');
 const app = express();
 
 app.use(cors());
-app.use(express.json()); // дозволяє читати JSON з тіла запиту (req.body)
+app.use(express.json()); 
+const authRoutes = require('./routes/authRoutes');
+app.use('/api/auth', authRoutes);
 
 // Тестовий маршрут - перевірка, що сервер живий
 app.get('/api/health', (req, res) => {
