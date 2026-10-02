@@ -8,6 +8,9 @@ app.use(cors());
 app.use(express.json()); 
 const authRoutes = require('./routes/authRoutes');
 app.use('/api/auth', authRoutes);
+const equipmentRoutes = require('./routes/equipmentRoutes');
+app.use('/api/equipment', equipmentRoutes);
+
 
 // Тестовий маршрут - перевірка, що сервер живий
 app.get('/api/health', (req, res) => {
