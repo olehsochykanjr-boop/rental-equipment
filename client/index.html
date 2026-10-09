@@ -39,6 +39,9 @@
           </select>
         </label>
       </div>
+            <div id="adminToolbar" class="toolbar" hidden>
+        <button id="addEquipmentBtn">+ Додати техніку</button>
+      </div>
       <p id="message"></p>
       <div id="equipmentList" class="grid"></div>
     </section>
@@ -135,7 +138,45 @@
       </div>
     </form>
   </dialog>
+    <!-- Додати / змінити техніку (адмін) -->
+  <dialog id="equipmentDialog">
+    <form id="equipmentForm">
+      <h2 id="equipmentDialogTitle">Нова техніка</h2>
+      <label>Назва
+        <input id="eqName" type="text" required maxlength="100" placeholder="Наприклад: Dell XPS 13">
+      </label>
+      <label>Категорія
+        <select id="eqCategory">
+          <option value="laptop">Ноутбук</option>
+          <option value="camera">Камера</option>
+          <option value="sensor">Датчик</option>
+          <option value="other">Інше</option>
+        </select>
+      </label>
+      <label>Інвентарний номер
+        <input id="eqInv" type="text" required maxlength="30" placeholder="INV-011">
+      </label>
+      <label>Опис
+        <input id="eqDescription" type="text" maxlength="200">
+      </label>
+      <p id="eqError" class="error"></p>
+      <div class="actions">
+        <button type="submit">Зберегти</button>
+        <button type="button" id="eqCancel" class="secondary">Скасувати</button>
+      </div>
+    </form>
+  </dialog>
 
+  <!-- Історія видач (адмін) -->
+  <dialog id="historyDialog">
+    <h2 id="historyTitle">Історія видач</h2>
+    <p id="historyMessage"></p>
+    <div id="historyList"></div>
+    <div class="actions">
+      <button type="button" id="historyClose" class="secondary">Закрити</button>
+    </div>
+  </dialog>
+  
   <script src="js/app.js"></script>
 </body>
 </html>

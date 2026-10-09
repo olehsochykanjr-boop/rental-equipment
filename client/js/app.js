@@ -12,6 +12,7 @@ const rentalsList = document.getElementById('rentalsList');
 const rentalsMessage = document.getElementById('rentalsMessage');
 const rentalFilterBar = document.getElementById('rentalFilterBar');
 const rentalStatusFilter = document.getElementById('rentalStatusFilter');
+const adminToolbar = document.getElementById('adminToolbar');
 
 const statusLabels = { available: 'Вільна', rented: 'Видана', maintenance: 'У ремонті' };
 const categoryLabels = { laptop: 'Ноутбук', camera: 'Камера', sensor: 'Датчик', other: 'Інше' };
@@ -99,6 +100,7 @@ function renderAuthBar() {
   authBar.replaceChildren();
   tabs.hidden = !currentUser;
   rentalFilterBar.hidden = !isAdmin();
+  adminToolbar.hidden = !isAdmin();
   rentalsTab.textContent = isAdmin() ? 'Усі заявки' : 'Мої заявки';
 
   if (currentUser) {
@@ -314,6 +316,21 @@ function renderCard(item) {
     btn.addEventListener('click', () => openRentalDialog(item));
     card.append(btn);
   }
+
+  if (isAdmin()) {
+    const tools = document.createElement('div');
+    tools.className = 'card-tools';
+    tools.append(
+      makeButton('Змінити', 'secondary', () => openEquipmentDialog(item)),
+      makeButton('Історія', 'secondary', () => openHistoryDialog(item))
+    );
+    if (item.status === 'available') {
+      tools.append(makeButton('У ремонт', 'warn', () => setEquipmentStatus(item, 'maintenance')));
+    } else if (item.status === 'maintenance') {
+      tools.append(makeButton('З ремонту', 'success', () => setEquipmentStatus(item, 'available')));
+    }
+    card.append(tools);
+  }
   return card;
 }
 
@@ -458,6 +475,113 @@ async function loadRentals() {
 }
 
 rentalStatusFilter.addEventListener('change', loadRentals);
+
+
+// ---------- Керування технікою (адмін) ----------
+const equipmentDialog = document.getElementById('equipmentDialog');
+const equipmentForm = document.getElementById('equipmentForm');
+const eqName = document.getElementById('eqName');
+const eqCategory = document.getElementById('eqCategory');
+const eqInv = document.getElementById('eqInv');
+const eqDescription = document.getElementById('eqDescription');
+const eqError = document.getElementById('eqError');
+let editingEquipmentId = null; // null = додаємо нову, число = редагуємо існуючу
+
+function openEquipmentDialog(item) {
+  editingEquipmentId = item ? item.id : null;
+  document.getElementById('equipmentDialogTitle').textContent = item ? 'Змінити техніку' : 'Нова техніка';
+  eqName.value = item ? item.name : '';
+  eqCategory.value = item ? item.category : 'laptop';
+  eqInv.value = item ? item.inventoryNumber : '';
+  eqInv.disabled = Boolean(item); // інвентарний номер не змінюємо
+  eqDescription.value = item && item.description ? item.description : '';
+  eqError.textContent = '';
+  equipmentDialog.showModal();
+}
+
+document.getElementById('addEquipmentBtn').addEventListener('click', () => openEquipmentDialog(null));
+document.getElementById('eqCancel').addEventListener('click', () => equipmentDialog.close());
+
+equipmentForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  eqError.textContent = '';
+
+  const body = {
+    name: eqName.value.trim(),
+    category: eqCategory.value,
+    description: eqDescription.value.trim(),
+  };
+
+  try {
+    if (editingEquipmentId) {
+      await api('/equipment/' + editingEquipmentId, { method: 'PUT', body });
+    } else {
+      body.inventoryNumber = eqInv.value.trim();
+      await api('/equipment', { method: 'POST', body });
+    }
+    equipmentDialog.close();
+    loadEquipment();
+  } catch (err) {
+    eqError.textContent = err.message;
+  }
+});
+
+async function setEquipmentStatus(item, status) {
+  messageEl.textContent = '';
+  try {
+    await api('/equipment/' + item.id, { method: 'PUT', body: { status } });
+    loadEquipment();
+  } catch (err) {
+    messageEl.textContent = err.message;
+  }
+}
+
+// ---------- Історія видач (адмін) ----------
+const historyDialog = document.getElementById('historyDialog');
+const historyTitle = document.getElementById('historyTitle');
+const historyMessage = document.getElementById('historyMessage');
+const historyList = document.getElementById('historyList');
+
+document.getElementById('historyClose').addEventListener('click', () => historyDialog.close());
+
+async function openHistoryDialog(item) {
+  historyTitle.textContent = 'Історія: ' + item.name;
+  historyList.replaceChildren();
+  historyMessage.textContent = 'Завантаження...';
+  historyDialog.showModal();
+
+  try {
+    const rentals = await api('/equipment/' + item.id + '/history');
+    if (rentals.length === 0) {
+      historyMessage.textContent = 'Цю техніку ще не видавали.';
+      return;
+    }
+    historyMessage.textContent = '';
+
+    rentals.forEach((r) => {
+      const row = document.createElement('div');
+      row.className = 'history-row';
+
+      const who = document.createElement('strong');
+      who.textContent = r.userName;
+
+      const badge = document.createElement('span');
+      badge.className = 'badge ' + r.status;
+      badge.textContent = rentalStatusLabels[r.status] || r.status;
+
+      const dates = document.createElement('p');
+      dates.className = 'dates';
+      dates.textContent = formatDate(r.requestedAt) + ' → ' + formatDate(r.dueDate);
+      if (r.returnedAt) dates.textContent += ' (повернено ' + formatDate(r.returnedAt) + ')';
+
+      row.append(who, badge, dates);
+      historyList.append(row);
+    });
+  } catch (err) {
+    historyMessage.textContent = 'Помилка завантаження: ' + err.message;
+  }
+}
+
 
 // ---------- Старт ----------
 renderAuthBar();
