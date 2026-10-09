@@ -3,25 +3,28 @@ const jwt = require('jsonwebtoken');
 const userRepository = require('../db/userRepository');
 
 function register(req, res) {
-  const { name, email, password, role } = req.body;
+  // role навмисно НЕ читаємо з запиту: інакше будь-хто зареєструється адміном
+  const { name, email, password } = req.body;
 
-  // Перевірка, що всі поля прийшли
-  if (!name || !email || !password || !role) {
-    return res.status(400).json({ error: 'Заповніть усі поля: name, email, password, role' });
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: 'Заповніть усі поля: name, email, password' });
   }
 
-  if (!['student', 'admin'].includes(role)) {
-    return res.status(400).json({ error: 'role має бути student або admin' });
+  if (!/^\S+@\S+\.\S+$/.test(email)) {
+    return res.status(400).json({ error: 'Невірний формат email' });
   }
 
-  // Чи email вже зайнятий
+  if (password.length < 5) {
+    return res.status(400).json({ error: 'Пароль має містити щонайменше 5 символів' });
+  }
+
   const existing = userRepository.findByEmail(email);
   if (existing) {
     return res.status(400).json({ error: 'Користувач з таким email вже існує' });
   }
 
   const passwordHash = bcrypt.hashSync(password, 10);
-  const user = userRepository.createUser({ name, email, passwordHash, role });
+  const user = userRepository.createUser({ name, email, passwordHash, role: 'student' });
 
   res.status(201).json({ message: 'Користувача створено', user });
 }
