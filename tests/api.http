@@ -1,45 +1,18 @@
+### ============ АВТОРИЗАЦІЯ ============
+
 ### Реєстрація
 POST http://localhost:3000/api/auth/register
 Content-Type: application/json
 
 {
-  "name": "Тест Другий",
-  "email": "test2@test.com",
+  "name": "Тест Третій",
+  "email": "test3@test.com",
   "password": "12345",
   "role": "student"
 }
 
-### Вхід
-POST http://localhost:3000/api/auth/login
-Content-Type: application/json
-
-{
-  "email": "test2@test.com",
-  "password": "12345"
-}
-
-### Список техніки (усі)
-GET http://localhost:3000/api/equipment
-
-### Список техніки з фільтром
-GET http://localhost:3000/api/equipment?category=camera&status=available
-
-### Одна одиниця техніки
-GET http://localhost:3000/api/equipment/1
-
-### Додати техніку (вставити токен адміна після Send Request на логін адміна)
-POST http://localhost:3000/api/equipment
-Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc5MDkzODA1MSwiZXhwIjoxNzkxNTQyODUxfQ.wxGXo5_uwVo4lDNB0ikn_qAj-zLZdBH15wYQ5cv11A0
-
-{
-  "name": "Nikon D5600",
-  "category": "camera",
-  "inventoryNumber": "INV-009",
-  "description": "Дзеркальна камера для фотогуртка"
-}
-
-### Вхід адміна
+### Вхід адміна (спрацьовує першим, токен запам'ятовується)
+# @name loginAdmin
 POST http://localhost:3000/api/auth/login
 Content-Type: application/json
 
@@ -47,3 +20,177 @@ Content-Type: application/json
   "email": "oleh@example.com",
   "password": "password123"
 }
+
+### Вхід студента Марії (токен запам'ятовується)
+# @name loginStudent
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "maria@example.com",
+  "password": "password123"
+}
+
+### ============ ТЕХНІКА ============
+
+### Список техніки (усі, без токена)
+GET http://localhost:3000/api/equipment
+
+### Список техніки з фільтром
+GET http://localhost:3000/api/equipment?category=laptop&status=available
+
+### Одна одиниця техніки
+GET http://localhost:3000/api/equipment/1
+
+### Додати техніку (адмін) - змінюй inventoryNumber, він має бути унікальним
+POST http://localhost:3000/api/equipment
+Content-Type: application/json
+Authorization: Bearer {{loginAdmin.response.body.$.token}}
+
+{
+  "name": "Nikon D5600",
+  "category": "camera",
+  "inventoryNumber": "INV-010",
+  "description": "Дзеркальна камера для фотогуртка"
+}
+
+### Додати техніку без токена (очікуємо 401)
+POST http://localhost:3000/api/equipment
+Content-Type: application/json
+
+{
+  "name": "Хакерська камера",
+  "category": "camera",
+  "inventoryNumber": "INV-999"
+}
+
+### Додати техніку токеном студента (очікуємо 403)
+POST http://localhost:3000/api/equipment
+Content-Type: application/json
+Authorization: Bearer {{loginStudent.response.body.$.token}}
+
+{
+  "name": "Хакерська камера",
+  "category": "camera",
+  "inventoryNumber": "INV-999"
+}
+
+### Історія видач по техніці (адмін)
+GET http://localhost:3000/api/equipment/1/history
+Authorization: Bearer {{loginAdmin.response.body.$.token}}
+
+### ============ ЗАЯВКИ: СЦЕНАРІЙ ПО ПОРЯДКУ ============
+
+### 1. Студент подає заявку на техніку 1 (очікуємо 201)
+# @name createRental
+POST http://localhost:3000/api/rentals
+Content-Type: application/json
+Authorization: Bearer {{loginStudent.response.body.$.token}}
+
+{
+  "equipmentId": 1,
+  "dueDate": "2026-10-20",
+  "notes": "для лабораторної"
+}
+
+### 2. Студент бачить свої заявки
+GET http://localhost:3000/api/rentals
+Authorization: Bearer {{loginStudent.response.body.$.token}}
+
+### 3. Студент змінює свою заявку (поки pending)
+PUT http://localhost:3000/api/rentals/{{createRental.response.body.$.id}}
+Content-Type: application/json
+Authorization: Bearer {{loginStudent.response.body.$.token}}
+
+{
+  "dueDate": "2026-10-25",
+  "notes": "продовжив до 25-го"
+}
+
+### 4. Студент пробує сам підтвердити свою заявку (очікуємо 403)
+PATCH http://localhost:3000/api/rentals/{{createRental.response.body.$.id}}/approve
+Authorization: Bearer {{loginStudent.response.body.$.token}}
+
+### 5. Адмін бачить усі заявки зі статусом pending
+GET http://localhost:3000/api/rentals?status=pending
+Authorization: Bearer {{loginAdmin.response.body.$.token}}
+
+### 6. Адмін підтверджує заявку (очікуємо approved)
+PATCH http://localhost:3000/api/rentals/{{createRental.response.body.$.id}}/approve
+Authorization: Bearer {{loginAdmin.response.body.$.token}}
+
+### 7. Перевірка: техніка 1 тепер rented
+GET http://localhost:3000/api/equipment/1
+
+### 8. Заявка на зайняту техніку (очікуємо 400 "недоступна")
+POST http://localhost:3000/api/rentals
+Content-Type: application/json
+Authorization: Bearer {{loginStudent.response.body.$.token}}
+
+{
+  "equipmentId": 1,
+  "dueDate": "2026-10-22"
+}
+
+### 9. Адмін фіксує повернення (очікуємо returned)
+PATCH http://localhost:3000/api/rentals/{{createRental.response.body.$.id}}/return
+Authorization: Bearer {{loginAdmin.response.body.$.token}}
+
+### 10. Перевірка: техніка 1 знову available
+GET http://localhost:3000/api/equipment/1
+
+### ============ ЗАЯВКИ: ВІДХИЛЕННЯ І СКАСУВАННЯ ============
+
+### Нова заявка для відхилення
+# @name rentalToReject
+POST http://localhost:3000/api/rentals
+Content-Type: application/json
+Authorization: Bearer {{loginStudent.response.body.$.token}}
+
+{
+  "equipmentId": 6,
+  "dueDate": "2026-10-18"
+}
+
+### Адмін відхиляє з причиною
+PATCH http://localhost:3000/api/rentals/{{rentalToReject.response.body.$.id}}/reject
+Content-Type: application/json
+Authorization: Bearer {{loginAdmin.response.body.$.token}}
+
+{
+  "reason": "Техніка потрібна для заняття"
+}
+
+### Нова заявка для скасування
+# @name rentalToCancel
+POST http://localhost:3000/api/rentals
+Content-Type: application/json
+Authorization: Bearer {{loginStudent.response.body.$.token}}
+
+{
+  "equipmentId": 6,
+  "dueDate": "2026-10-19"
+}
+
+### Студент скасовує свою заявку
+DELETE http://localhost:3000/api/rentals/{{rentalToCancel.response.body.$.id}}
+Authorization: Bearer {{loginStudent.response.body.$.token}}
+
+### ============ ПЕРЕВІРКИ ПОМИЛОК ============
+
+### Дата в минулому (очікуємо 400)
+POST http://localhost:3000/api/rentals
+Content-Type: application/json
+Authorization: Bearer {{loginStudent.response.body.$.token}}
+
+{
+  "equipmentId": 6,
+  "dueDate": "2020-01-01"
+}
+
+### Неіснуюча заявка (очікуємо 404)
+GET http://localhost:3000/api/rentals/99999
+Authorization: Bearer {{loginAdmin.response.body.$.token}}
+
+### Заявки без токена (очікуємо 401)
+GET http://localhost:3000/api/rentals
