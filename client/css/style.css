@@ -277,3 +277,42 @@ dialog input:disabled { background: #eef1f6; color: var(--muted); }
 .history-row:last-child { border-bottom: none; }
 .history-row strong { display: block; margin-bottom: 4px; }
 .history-row .dates { margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; }
+
+
+/* ---------- Статистика ---------- */
+#statsMessage { min-height: 1.4em; color: var(--muted); }
+
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.stat-card {
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+.stat-card .number { font-size: 2rem; font-weight: 700; color: var(--primary); }
+.stat-card .label { margin-top: 4px; font-size: 0.85rem; color: var(--muted); }
+.stat-card.alert .number { color: #c62828; }
+
+.stat-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+.stat-panel {
+  padding: 18px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+.stat-panel h3 { margin: 0 0 14px; font-size: 1rem; }
+.stat-panel .empty { color: var(--muted); font-size: 0.9rem; }
+
+.bar-row { margin-bottom: 10px; font-size: 0.88rem; }
+.bar-label { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.bar-track { height: 10px; background: #e8edf5; border-radius: 999px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--primary); border-radius: 999px; }

@@ -7,7 +7,10 @@ const equipmentRoutes = require('./routes/equipmentRoutes');
 const rentalRoutes = require('./routes/rentalRoutes');
 const path = require('path');
 const app = express();
+const statsRoutes = require('./routes/statsRoutes');
 
+
+app.use('/api/stats', statsRoutes);
 app.use(cors());
 app.use(express.json());
 

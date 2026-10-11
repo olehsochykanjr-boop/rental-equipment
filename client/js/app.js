@@ -6,13 +6,17 @@ const statusFilter = document.getElementById('statusFilter');
 const authBar = document.getElementById('authBar');
 const tabs = document.getElementById('tabs');
 const rentalsTab = document.getElementById('rentalsTab');
+const statsTab = document.getElementById('statsTab');
 const catalogView = document.getElementById('catalogView');
 const rentalsView = document.getElementById('rentalsView');
+const statsView = document.getElementById('statsView');
 const rentalsList = document.getElementById('rentalsList');
 const rentalsMessage = document.getElementById('rentalsMessage');
 const rentalFilterBar = document.getElementById('rentalFilterBar');
 const rentalStatusFilter = document.getElementById('rentalStatusFilter');
 const adminToolbar = document.getElementById('adminToolbar');
+const statsMessage = document.getElementById('statsMessage');
+const statsContent = document.getElementById('statsContent');
 
 const statusLabels = { available: 'Вільна', rented: 'Видана', maintenance: 'У ремонті' };
 const categoryLabels = { laptop: 'Ноутбук', camera: 'Камера', sensor: 'Датчик', other: 'Інше' };
@@ -84,11 +88,13 @@ function formatDate(iso) {
 function showView(view) {
   catalogView.hidden = view !== 'catalog';
   rentalsView.hidden = view !== 'rentals';
+  statsView.hidden = view !== 'stats';
   document.querySelectorAll('.tab').forEach((tab) => {
     tab.classList.toggle('active', tab.dataset.view === view);
   });
   if (view === 'catalog') loadEquipment();
-  else loadRentals();
+  else if (view === 'rentals') loadRentals();
+  else loadStats();
 }
 
 document.querySelectorAll('.tab').forEach((tab) => {
@@ -101,6 +107,7 @@ function renderAuthBar() {
   tabs.hidden = !currentUser;
   rentalFilterBar.hidden = !isAdmin();
   adminToolbar.hidden = !isAdmin();
+  statsTab.hidden = !isAdmin();
   rentalsTab.textContent = isAdmin() ? 'Усі заявки' : 'Мої заявки';
 
   if (currentUser) {
@@ -476,7 +483,6 @@ async function loadRentals() {
 
 rentalStatusFilter.addEventListener('change', loadRentals);
 
-
 // ---------- Керування технікою (адмін) ----------
 const equipmentDialog = document.getElementById('equipmentDialog');
 const equipmentForm = document.getElementById('equipmentForm');
@@ -582,6 +588,103 @@ async function openHistoryDialog(item) {
   }
 }
 
+// ---------- Статистика (адмін) ----------
+function makeStatCard(number, label, alert) {
+  const card = document.createElement('div');
+  card.className = 'stat-card' + (alert && number > 0 ? ' alert' : '');
+  const num = document.createElement('div');
+  num.className = 'number';
+  num.textContent = number;
+  const lbl = document.createElement('div');
+  lbl.className = 'label';
+  lbl.textContent = label;
+  card.append(num, lbl);
+  return card;
+}
+
+// Панель зі смужками: rows = [{ label, count }]
+function makeBarPanel(title, rows) {
+  const panel = document.createElement('div');
+  panel.className = 'stat-panel';
+  const h = document.createElement('h3');
+  h.textContent = title;
+  panel.append(h);
+
+  if (rows.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'empty';
+    empty.textContent = 'Даних поки немає.';
+    panel.append(empty);
+    return panel;
+  }
+
+  const max = Math.max(...rows.map((r) => r.count));
+  rows.forEach((r) => {
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+
+    const label = document.createElement('div');
+    label.className = 'bar-label';
+    const name = document.createElement('span');
+    name.textContent = r.label;
+    const count = document.createElement('strong');
+    count.textContent = r.count;
+    label.append(name, count);
+
+    const track = document.createElement('div');
+    track.className = 'bar-track';
+    const fill = document.createElement('div');
+    fill.className = 'bar-fill';
+    fill.style.width = (r.count / max) * 100 + '%';
+    track.append(fill);
+
+    row.append(label, track);
+    panel.append(row);
+  });
+  return panel;
+}
+
+async function loadStats() {
+  statsMessage.textContent = 'Завантаження...';
+  statsContent.replaceChildren();
+
+  try {
+    const s = await api('/stats');
+    statsMessage.textContent = '';
+
+    const cards = document.createElement('div');
+    cards.className = 'stat-cards';
+    cards.append(
+      makeStatCard(s.equipment.total || 0, 'Одиниць техніки'),
+      makeStatCard(s.equipment.available || 0, 'Вільні'),
+      makeStatCard(s.equipment.rented || 0, 'Видані'),
+      makeStatCard(s.equipment.maintenance || 0, 'У ремонті'),
+      makeStatCard(s.rentals.pending || 0, 'Заявок очікує'),
+      makeStatCard(s.rentals.overdue || 0, 'Прострочені повернення', true)
+    );
+
+    const panels = document.createElement('div');
+    panels.className = 'stat-panels';
+    panels.append(
+      makeBarPanel(
+        'Видачі за видом техніки',
+        s.byCategory.map((r) => ({ label: categoryLabels[r.category] || r.category, count: r.count }))
+      ),
+      makeBarPanel(
+        'Заявки за місяцями',
+        s.byMonth.map((r) => ({ label: r.month, count: r.count }))
+      ),
+      makeBarPanel(
+        'Найактивніші студенти',
+        s.topUsers.map((r) => ({ label: r.name, count: r.count }))
+      )
+    );
+
+    statsContent.append(cards, panels);
+  } catch (err) {
+    statsMessage.textContent = 'Помилка завантаження: ' + err.message;
+  }
+}
 
 // ---------- Старт ----------
 renderAuthBar();

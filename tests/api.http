@@ -194,3 +194,15 @@ Authorization: Bearer {{loginAdmin.response.body.$.token}}
 
 ### Заявки без токена (очікуємо 401)
 GET http://localhost:3000/api/rentals
+
+
+### Статистика без токена (очікуємо 401)
+GET http://localhost:3000/api/stats
+
+### Статистика студентом (очікуємо 403)
+GET http://localhost:3000/api/stats
+Authorization: Bearer {{loginStudent.response.body.$.token}}
+
+### Статистика адміном (очікуємо 200)
+GET http://localhost:3000/api/stats
+Authorization: Bearer {{loginAdmin.response.body.$.token}}

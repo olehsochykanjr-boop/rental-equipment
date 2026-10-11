@@ -15,6 +15,7 @@
   <nav id="tabs" hidden>
     <button class="tab active" data-view="catalog">Каталог</button>
     <button class="tab" data-view="rentals" id="rentalsTab">Мої заявки</button>
+    <button class="tab" data-view="stats" id="statsTab" hidden>Статистика</button>
   </nav>
 
   <main>
@@ -39,7 +40,7 @@
           </select>
         </label>
       </div>
-            <div id="adminToolbar" class="toolbar" hidden>
+      <div id="adminToolbar" class="toolbar" hidden>
         <button id="addEquipmentBtn">+ Додати техніку</button>
       </div>
       <p id="message"></p>
@@ -62,6 +63,12 @@
       </div>
       <p id="rentalsMessage"></p>
       <div id="rentalsList" class="rental-list"></div>
+    </section>
+
+    <!-- Вигляд 3: статистика (адмін) -->
+    <section id="statsView" hidden>
+      <p id="statsMessage"></p>
+      <div id="statsContent"></div>
     </section>
   </main>
 
@@ -138,7 +145,8 @@
       </div>
     </form>
   </dialog>
-    <!-- Додати / змінити техніку (адмін) -->
+
+  <!-- Додати / змінити техніку (адмін) -->
   <dialog id="equipmentDialog">
     <form id="equipmentForm">
       <h2 id="equipmentDialogTitle">Нова техніка</h2>
@@ -176,7 +184,7 @@
       <button type="button" id="historyClose" class="secondary">Закрити</button>
     </div>
   </dialog>
-  
+
   <script src="js/app.js"></script>
 </body>
 </html>
